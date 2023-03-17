@@ -237,9 +237,3 @@ resource "aws_eip" "nat_eip" {
     Name = "nat-eip-${var.azs[count.index]}"
   }
 }
-
-module "nat_gateway" {
-  source = "./nat_gateway"
-  vpc_id = var.vpc_id
-  azs = var.azs
-}
