@@ -258,3 +258,9 @@ variable "natgw_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "create_secondary_eip" {
+  type        = bool
+  description = "Whether to create a secondary Elastic IP to associate with the NAT Gateway"
+  default     = true
+}

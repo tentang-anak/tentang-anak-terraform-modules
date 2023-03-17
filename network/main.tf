@@ -220,20 +220,72 @@ resource "aws_main_route_table_association" "a" {
 #   depends_on = [aws_internet_gateway.this]
 # }
 
-
 resource "aws_nat_gateway" "nat_gateway" {
-  count = length(var.azs)
+  count = length(var.subnets_private) * length(var.subnets_private[0].azs)
   allocation_id = aws_eip.nat_eip[count.index].id
-  subnet_id     = element(data.aws_subnet_ids.subnets_private.ids, count.index)
+  subnet_id     = aws_subnet.private[count.index].id
   tags = {
-    Name = "nat-gateway-${var.azs[count.index]}"
+    Name = "nat-gateway-${var.subnets_private[floor(count.index / length(var.subnets_private[0].azs))].subnet_name[count.index % length(var.subnets_private[0].azs)]}"
   }
 }
 
 resource "aws_eip" "nat_eip" {
-  count = length(var.azs)
+  count = length(var.subnets_private) * length(var.subnets_private[0].azs)
   vpc      = true
   tags = {
-    Name = "nat-eip-${var.azs[count.index]}"
+    Name = "nat-eip-${var.subnets_private[floor(count.index / length(var.subnets_private[0].azs))].subnet_name[count.index % length(var.subnets_private[0].azs)]}"
   }
 }
+
+resource "aws_eip" "secondary_eip" {
+  count = var.create_secondary_eip ? length(var.subnets_private) * length(var.subnets_private[0].azs) : 0
+
+  vpc      = true
+  depends_on = [aws_nat_gateway.nat_gateway]
+    tags = {
+    Name = "nat-eip-secondary-${var.subnets_private[floor(count.index / length(var.subnets_private[0].azs))].subnet_name[count.index % length(var.subnets_private[0].azs)]}"
+  }
+}
+
+# resource "aws_nat_gateway" "nat_gateway" {
+#   count = length(var.subnets_private) * length(var.subnets_private[0].azs)
+
+#   allocation_id = element(aws_eip.nat_eip.*.id, count.index * 2)
+#   subnet_id     = aws_subnet.private[count.index].id
+
+#   tags = {
+#     Name = "nat-gateway-${var.subnets_private[floor(count.index / length(var.subnets_private[0].azs))].subnet_name[count.index % length(var.subnets_private[0].azs)]}"
+#   }
+# }
+
+# resource "aws_eip" "nat_eip" {
+#   count = length(var.subnets_private) * length(var.subnets_private[0].azs)
+#   vpc      = true
+
+#   tags = {
+# Name = "testing}"
+#   }
+# }
+
+# resource "aws_nat_gateway" "nat_gateway_with_secondary_eip" {
+#   count = length(var.subnets_private) * length(var.subnets_private[0].azs)
+
+#   allocation_id = element(aws_eip.secondary_eip.*.id, count.index)
+#   subnet_id     = aws_subnet.private[count.index].id
+
+#   tags = {
+#     Name = "nat-gateway-${var.subnets_private[floor(count.index / length(var.subnets_private[0].azs))].subnet_name[count.index % length(var.subnets_private[0].azs)]}"
+#   }
+
+#   depends_on = [aws_nat_gateway.nat_gateway]
+# }
+
+# resource "aws_eip" "secondary_eip" {
+#   count = length(var.subnets_private) * length(var.subnets_private[0].azs)
+#   vpc      = true
+
+#   tags = {
+#     Name = "testing"
+#   }
+# }
+
