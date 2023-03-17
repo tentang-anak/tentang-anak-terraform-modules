@@ -203,19 +203,43 @@ resource "aws_main_route_table_association" "a" {
 }
 
 # NAT
-resource "aws_nat_gateway" "example" {
-  allocation_id = var.eip
-  subnet_id     = var.nat_gw_subnet
+# resource "aws_nat_gateway" "example" {
+#   allocation_id = var.eip
+#   subnet_id     = var.nat_gw_subnet
 
-  tags = merge(
-    {
-      "Name" = format("%s", var.name)
-    },
-    var.tags,
-    var.natgw_tags,
-  )
+#   tags = merge(
+#     {
+#       "Name" = format("%s", var.name)
+#     },
+#     var.tags,
+#     var.natgw_tags,
+#   )
 
-  # To ensure proper ordering, it is recommended to add an explicit dependency
-  # on the Internet Gateway for the VPC.
-  depends_on = [aws_internet_gateway.this]
+#   # To ensure proper ordering, it is recommended to add an explicit dependency
+#   # on the Internet Gateway for the VPC.
+#   depends_on = [aws_internet_gateway.this]
+# }
+
+
+resource "aws_nat_gateway" "nat_gateway" {
+  count = length(var.azs)
+  allocation_id = aws_eip.nat_eip[count.index].id
+  subnet_id     = element(data.aws_subnet_ids.subnets_private.ids, count.index)
+  tags = {
+    Name = "nat-gateway-${var.azs[count.index]}"
+  }
+}
+
+resource "aws_eip" "nat_eip" {
+  count = length(var.azs)
+  vpc      = true
+  tags = {
+    Name = "nat-eip-${var.azs[count.index]}"
+  }
+}
+
+module "nat_gateway" {
+  source = "./nat_gateway"
+  vpc_id = var.vpc_id
+  azs = var.azs
 }
