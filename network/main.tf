@@ -87,7 +87,7 @@ resource "aws_default_security_group" "this" {
 
   tags = merge(
     {
-      "Name" = format("%s", var.default_security_group_name)
+      "Name" = format("%s", "ta-prd-sg")
     },
     var.tags,
     var.default_security_group_tags,
@@ -134,7 +134,7 @@ resource "aws_internet_gateway" "this" {
 
   tags = merge(
     {
-      "Name" = format("%s", var.name)
+      "Name" = format("%s", "ta-prd-igw")
     },
     var.tags,
     var.igw_tags,
@@ -202,7 +202,7 @@ resource "aws_route_table" "public" {
 
   tags = merge(
     {
-      "Name" = format("%s-${var.public_subnet_suffix}", var.name)
+      "Name" = format("%s-${var.public_subnet_suffix}", "ta-prd-rt")
     },
     var.tags,
     var.public_route_table_tags,
@@ -243,8 +243,8 @@ resource "aws_route_table" "private" {
     {
       "Name" = var.single_nat_gateway ? "${var.name}-${var.private_subnet_suffix}" : format(
         "%s-${var.private_subnet_suffix}-%s",
-        var.name,
-        element(var.azs, count.index),
+        "ta-prd-rt",
+        element(var.zone_custom, count.index),
       )
     },
     var.tags,
@@ -384,7 +384,7 @@ resource "aws_subnet" "public" {
     {
       "Name" = format(
         "%s-${var.public_subnet_suffix}-%s",
-        var.name,
+        "ta-prd-sub",
         element(var.zone_custom, count.index),
       )
     },
@@ -412,7 +412,7 @@ resource "aws_subnet" "private" {
     {
       "Name" = format(
         "%s-${var.private_subnet_suffix}-%s",
-        var.name,
+        "ta-prd-sub",
         element(var.zone_custom, count.index),
       )
     },
@@ -1071,8 +1071,26 @@ resource "aws_eip" "nat" {
     {
       "Name" = format(
         "%s-%s",
-        var.name,
-        element(var.azs, var.single_nat_gateway ? 0 : count.index),
+        "ta-prd-eip-natgw",
+        element(var.zone_custom, var.single_nat_gateway ? 0 : count.index),
+      )
+    },
+    var.tags,
+    var.nat_eip_tags,
+  )
+}
+
+resource "aws_eip" "secondary_ip" {
+  count = var.create_vpc && var.enable_nat_gateway && false == var.reuse_nat_ips ? local.nat_gateway_count : 0
+
+  vpc = true
+
+  tags = merge(
+    {
+      "Name" = format(
+        "%s-%s",
+        "ta-prd-eip2-natgw",
+        element(var.zone_custom, var.single_nat_gateway ? 0 : count.index),
       )
     },
     var.tags,
@@ -1096,8 +1114,8 @@ resource "aws_nat_gateway" "this" {
     {
       "Name" = format(
         "%s-%s",
-        var.name,
-        element(var.azs, var.single_nat_gateway ? 0 : count.index),
+        "ta-prd-natgw",
+        element(var.zone_custom, var.single_nat_gateway ? 0 : count.index),
       )
     },
     var.tags,
